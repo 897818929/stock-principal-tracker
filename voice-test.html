@@ -1,0 +1,985 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>股票本金记录</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #fff7eb;
+      --panel: #ffffff;
+      --panel-warm: #fffaf0;
+      --ink: #23160f;
+      --muted: #7f6958;
+      --line: #f0d7ab;
+      --accent: #c6281d;
+      --accent-dark: #991b1b;
+      --gold: #d99b24;
+      --gold-dark: #9f690d;
+      --profit: #8a5312;
+      --danger: #b42318;
+      --danger-bg: #fff1e8;
+      --soft: #fff0ce;
+      --shadow: 0 18px 42px rgba(115, 61, 12, .14);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+        "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 18% 0%, rgba(255, 218, 132, .42), transparent 32%),
+        linear-gradient(180deg, #fff1d6 0%, #fff8ef 44%, #f6f7f9 100%);
+      color: var(--ink);
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    .app {
+      width: min(960px, 100%);
+      margin: 0 auto;
+      padding: 24px 16px 36px;
+    }
+
+    header {
+      display: grid;
+      gap: 16px;
+      padding: 12px 0 16px;
+    }
+
+    .title-row {
+      display: grid;
+      justify-items: center;
+      gap: 10px;
+      text-align: center;
+    }
+
+    .brand {
+      display: grid;
+      justify-items: center;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .brand-mark {
+      width: 98px;
+      height: 98px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: linear-gradient(145deg, #d83a2f, #8f1814 72%, #5f100e);
+      border: 2px solid rgba(255, 222, 126, .92);
+      box-shadow:
+        inset 0 2px 10px rgba(255, 226, 151, .34),
+        0 15px 30px rgba(151, 42, 18, .24);
+    }
+
+    .mouse-mark {
+      width: 90px;
+      height: 90px;
+      color: #ffe69a;
+      filter:
+        drop-shadow(0 2px 3px rgba(53, 8, 6, .42))
+        drop-shadow(0 0 8px rgba(255, 226, 151, .22));
+    }
+
+    .brand-copy {
+      display: grid;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 26px;
+      line-height: 1.2;
+      font-weight: 760;
+      letter-spacing: 0;
+    }
+
+    .tagline {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .status {
+      color: var(--gold-dark);
+      font-size: 13px;
+      min-height: 18px;
+      text-align: center;
+      padding: 7px 11px;
+      border: 1px solid rgba(217, 155, 36, .28);
+      border-radius: 999px;
+      background: rgba(255, 252, 242, .78);
+      box-shadow: 0 8px 18px rgba(151, 87, 10, .08);
+    }
+
+    .principal {
+      position: relative;
+      overflow: hidden;
+      background:
+        linear-gradient(135deg, rgba(151, 22, 19, .96), rgba(198, 40, 29, .92) 46%, rgba(117, 19, 17, .96)),
+        var(--accent);
+      border: 1px solid rgba(255, 225, 140, .72);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      padding: 22px;
+      display: grid;
+      gap: 8px;
+      color: #fff9e7;
+    }
+
+    .principal::after {
+      content: "";
+      position: absolute;
+      inset: auto 18px 18px auto;
+      width: 140px;
+      height: 74px;
+      border-top: 3px solid rgba(255, 219, 119, .76);
+      border-right: 3px solid rgba(255, 219, 119, .58);
+      transform: skewX(-18deg);
+      opacity: .5;
+      pointer-events: none;
+    }
+
+    .principal span {
+      color: rgba(255, 249, 231, .82);
+      font-size: 14px;
+    }
+
+    .principal strong {
+      font-size: clamp(34px, 8vw, 54px);
+      line-height: 1;
+      font-weight: 800;
+      letter-spacing: 0;
+      word-break: break-word;
+      color: #ffe9a3;
+      text-shadow: 0 3px 12px rgba(65, 16, 12, .34);
+    }
+
+    .market-signals {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: -6px;
+    }
+
+    .signal {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      min-height: 28px;
+      padding: 4px 9px;
+      border-radius: 999px;
+      background: rgba(255, 248, 231, .72);
+      border: 1px solid rgba(217, 155, 36, .24);
+    }
+
+    .signal span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .signal strong {
+      color: var(--profit);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0;
+    }
+
+    main {
+      display: grid;
+      gap: 14px;
+    }
+
+    .entry {
+      background: rgba(255, 255, 255, .9);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 16px;
+      display: grid;
+      gap: 12px;
+      box-shadow: 0 14px 34px rgba(115, 61, 12, .08);
+    }
+
+    .entry-line {
+      display: grid;
+      grid-template-columns: 1fr auto auto auto;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .entry input {
+      width: 100%;
+      min-height: 48px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 0 13px;
+      background: #fffdf8;
+      color: var(--ink);
+      outline: none;
+    }
+
+    .entry input:focus {
+      border-color: var(--gold);
+      box-shadow: 0 0 0 3px rgba(217, 155, 36, .18);
+    }
+
+    .btn {
+      min-height: 48px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 0 14px;
+      background: #fffdf8;
+      color: var(--ink);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: transform .16s ease, box-shadow .16s ease, background .16s ease;
+    }
+
+    .btn:hover {
+      background: #fff7e4;
+      box-shadow: 0 8px 18px rgba(115, 61, 12, .1);
+      transform: translateY(-1px);
+    }
+
+    .btn:disabled {
+      cursor: not-allowed;
+      opacity: .45;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .primary {
+      background: linear-gradient(180deg, #e43b2f, #b51f18);
+      border-color: #b51f18;
+      color: #fff;
+      font-weight: 700;
+      box-shadow: 0 10px 22px rgba(181, 31, 24, .2);
+    }
+
+    .primary:hover { background: linear-gradient(180deg, #d73529, #991b1b); }
+
+    .initial-btn {
+      border-color: rgba(217, 155, 36, .48);
+      color: var(--gold-dark);
+      background: linear-gradient(180deg, #fff7df, #ffedb9);
+      font-weight: 700;
+    }
+
+    .voice-btn {
+      border-color: rgba(217, 155, 36, .38);
+      color: var(--accent-dark);
+      background: #fff8e6;
+      font-weight: 700;
+    }
+
+    .voice-btn.listening {
+      background: #fff0ce;
+      border-color: rgba(198, 40, 29, .55);
+      box-shadow: 0 0 0 4px rgba(198, 40, 29, .12);
+    }
+
+    .backup-remind {
+      border-color: rgba(198, 40, 29, .62);
+      background: #fff0ce;
+      color: var(--accent-dark);
+      box-shadow: 0 0 0 4px rgba(217, 155, 36, .18), 0 10px 22px rgba(115, 61, 12, .16);
+    }
+
+    .backup-notice {
+      display: grid;
+      gap: 4px;
+      padding: 11px 12px;
+      border: 1px solid rgba(198, 40, 29, .32);
+      border-radius: 8px;
+      background: #fff0ce;
+      color: var(--accent-dark);
+      box-shadow: 0 10px 22px rgba(115, 61, 12, .1);
+    }
+
+    .backup-notice[hidden] {
+      display: none;
+    }
+
+    .backup-notice strong {
+      font-size: 14px;
+    }
+
+    .backup-notice span {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .danger {
+      color: var(--danger);
+      background: var(--danger-bg);
+      border-color: #ffd3cf;
+    }
+
+    .quick {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .chip {
+      min-height: 34px;
+      border-radius: 999px;
+      border: 1px solid rgba(217, 155, 36, .34);
+      background: var(--soft);
+      color: var(--gold-dark);
+      padding: 0 12px;
+      cursor: pointer;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .toolbar-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .records {
+      background: rgba(255, 255, 255, .92);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 14px 34px rgba(115, 61, 12, .08);
+    }
+
+    .records-head,
+    .record {
+      display: grid;
+      grid-template-columns: 1.1fr .8fr 1fr 1.1fr auto;
+      gap: 8px;
+      align-items: center;
+      padding: 12px 14px;
+    }
+
+    .records-head {
+      background: #fff0ce;
+      color: #7d4d0f;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .record {
+      min-height: 58px;
+      border-top: 1px solid var(--line);
+      font-size: 15px;
+    }
+
+    .record:nth-child(even) {
+      background: #fffaf0;
+    }
+
+    .type-in { color: var(--profit); font-weight: 700; }
+    .type-out { color: #b54708; font-weight: 700; }
+
+    .money {
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+    }
+
+    .delete {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 20px;
+      line-height: 1;
+    }
+
+    .delete:hover {
+      background: var(--danger-bg);
+      color: var(--danger);
+    }
+
+    .empty {
+      padding: 34px 16px;
+      text-align: center;
+      color: var(--muted);
+      border-top: 1px solid var(--line);
+      background: #fffdf8;
+    }
+
+    .file-input {
+      display: none;
+    }
+
+    @media (max-width: 720px) {
+      .app {
+        padding: 14px 12px 24px;
+      }
+
+      .title-row {
+        display: grid;
+        gap: 10px;
+      }
+
+      .brand-mark {
+        width: 92px;
+        height: 92px;
+      }
+
+      .mouse-mark {
+        width: 84px;
+        height: 84px;
+      }
+
+      .status {
+        text-align: center;
+        justify-self: center;
+      }
+
+      .entry-line {
+        grid-template-columns: 1fr;
+      }
+
+      .btn {
+        width: 100%;
+      }
+
+      .toolbar-actions,
+      .toolbar-actions .btn {
+        width: 100%;
+      }
+
+      .records-head {
+        display: none;
+      }
+
+      .record {
+        grid-template-columns: 1fr auto;
+        gap: 6px 12px;
+        padding: 12px;
+      }
+
+      .record .date,
+      .record .type,
+      .record .amount,
+      .record .balance {
+        text-align: left;
+      }
+
+      .record .amount::before {
+        content: "金额 ";
+        color: var(--muted);
+        font-weight: 400;
+      }
+
+      .record .balance::before {
+        content: "本金 ";
+        color: var(--muted);
+        font-weight: 400;
+      }
+
+      .record .delete {
+        grid-row: 1 / span 2;
+        grid-column: 2;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="title-row">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">
+            <svg class="mouse-mark" viewBox="0 0 96 96" role="img" aria-label="金色老鼠标志">
+              <defs>
+                <linearGradient id="mouseGold" x1="18" y1="16" x2="78" y2="82" gradientUnits="userSpaceOnUse">
+                  <stop offset="0" stop-color="#fff2a8"/>
+                  <stop offset=".42" stop-color="#f4c64f"/>
+                  <stop offset="1" stop-color="#b87614"/>
+                </linearGradient>
+              </defs>
+              <path fill="none" stroke="url(#mouseGold)" stroke-linecap="round" stroke-width="8" d="M29 55c-13 2-22-5-22-15 0-11 14-16 23-7 7 7 5 18-4 23"/>
+              <path fill="url(#mouseGold)" d="M29 57c1-14 13-24 31-24 13 0 23 6 31 17-7 5-15 8-25 9-5 13-16 21-31 21-13 0-22-6-23-15-.8-5 6-8 17-8Z"/>
+              <circle cx="53" cy="29" r="13" fill="url(#mouseGold)"/>
+              <circle cx="53" cy="29" r="6.5" fill="#8b1d14" opacity=".7"/>
+              <circle cx="73" cy="43" r="3.6" fill="#150b08"/>
+              <path fill="none" stroke="#7c1712" stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M76 51c4-1 8-3 12-6M31 70c-4 5-9 8-15 8M47 76c0 6-3 10-9 12M55 56c-4 8-5 15-2 23"/>
+            </svg>
+          </div>
+          <div class="brand-copy">
+            <h1>股票本金记录</h1>
+            <div class="tagline">金鼠守本金，转入转出一眼清楚</div>
+          </div>
+        </div>
+        <div class="status" id="status">本地保存</div>
+      </div>
+      <section class="principal" aria-label="当前本金">
+        <span>当前本金</span>
+        <strong id="principal">¥0</strong>
+      </section>
+      <section class="market-signals" aria-label="投资状态">
+        <div class="signal">
+          <span>账户方向</span>
+          <strong>稳中向上</strong>
+        </div>
+        <div class="signal">
+          <span>本金状态</span>
+          <strong>清晰可控</strong>
+        </div>
+        <div class="signal">
+          <span>数据位置</span>
+          <strong>仅本地保存</strong>
+        </div>
+      </section>
+    </header>
+
+    <main>
+      <section class="entry" aria-label="新增记录">
+        <div class="entry-line">
+          <input id="sentence" autocomplete="off" inputmode="text"
+            placeholder="例如：银行转入股票20000元，或第一次填 10000">
+          <button class="btn initial-btn" id="initialBtn" type="button">设为初始本金</button>
+          <button class="btn voice-btn" id="voiceBtn" type="button">语音输入</button>
+          <button class="btn primary" id="addBtn" type="button">记录</button>
+        </div>
+        <div class="quick" aria-label="快捷输入">
+          <button class="chip" type="button" data-sample="转入 10000">转入 10000</button>
+          <button class="chip" type="button" data-sample="转入 20000">转入 20000</button>
+          <button class="chip" type="button" data-sample="转出 5000">转出 5000</button>
+          <button class="chip" type="button" data-sample="股票转出银行 10000">转出 10000</button>
+        </div>
+        <div class="backup-notice" id="backupNotice" hidden>
+          <strong>已记录，请备份 JSON</strong>
+          <span>手机浏览器数据只保存在本机，转入或转出后建议马上点下面的“备份 JSON”。</span>
+        </div>
+      </section>
+
+      <section class="toolbar" aria-label="数据操作">
+        <div id="count">0 笔记录</div>
+        <div class="toolbar-actions">
+          <button class="btn" id="undoBtn" type="button">撤回上一笔</button>
+          <button class="btn" id="exportBtn" type="button">导出 CSV</button>
+          <button class="btn" id="backupBtn" type="button">备份 JSON</button>
+          <button class="btn" id="importBtn" type="button">导入备份</button>
+          <button class="btn danger" id="clearBtn" type="button">清空</button>
+          <input class="file-input" id="fileInput" type="file" accept="application/json,.json">
+        </div>
+      </section>
+
+      <section class="records" aria-label="历史记录">
+        <div class="records-head">
+          <div>日期</div>
+          <div>类型</div>
+          <div class="money">金额</div>
+          <div class="money">本金</div>
+          <div></div>
+        </div>
+        <div id="records"></div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const STORAGE_KEY = "stockPrincipalRecords.v1";
+    const $ = (id) => document.getElementById(id);
+
+    let records = loadRecords();
+
+    function loadRecords() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        return raw ? JSON.parse(raw) : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function saveRecords() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+    }
+
+    function today() {
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${y}-${m}-${day}`;
+    }
+
+    function formatMoney(value) {
+      return new Intl.NumberFormat("zh-CN", {
+        style: "currency",
+        currency: "CNY",
+        maximumFractionDigits: 2
+      }).format(value);
+    }
+
+    function setStatus(text) {
+      $("status").textContent = text;
+      window.clearTimeout(setStatus.timer);
+      setStatus.timer = window.setTimeout(() => {
+        $("status").textContent = "本地保存";
+      }, 2200);
+    }
+
+    function remindBackup() {
+      const backupBtn = $("backupBtn");
+      $("backupNotice").hidden = false;
+      backupBtn.classList.add("backup-remind");
+      window.clearTimeout(remindBackup.timer);
+      remindBackup.timer = window.setTimeout(() => {
+        backupBtn.classList.remove("backup-remind");
+      }, 6000);
+    }
+
+    function normalizeText(text) {
+      return String(text || "")
+        .replace(/[，。、“”]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
+    function parseEntry(text) {
+      const sentence = normalizeText(text);
+      const type = parseType(sentence);
+      const amount = parseAmount(sentence);
+
+      if (!type) throw new Error("没识别出转入还是转出");
+      if (!amount || amount <= 0) throw new Error("没识别出金额");
+
+      return {
+        id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+        date: today(),
+        type,
+        amount,
+        note: sentence
+      };
+    }
+
+    function parseType(text) {
+      const t = text.replace(/\s/g, "");
+      const outWords = ["转出", "取出", "提现", "提出", "证券到银行", "股票到银行", "股票转银行", "股票转出银行"];
+      const inWords = ["转入", "存入", "打入", "汇入", "银行到股票", "银行转股票", "银行转入股票", "转进"];
+      if (outWords.some((word) => t.includes(word))) return "转出";
+      if (inWords.some((word) => t.includes(word))) return "转入";
+      return "";
+    }
+
+    function parseAmount(text) {
+      const compact = text.replace(/[,，\s]/g, "");
+      const arabic = compact.match(/(\d+(?:\.\d+)?)(?:元|块|人民币|rmb|RMB|万|千)?/);
+      if (arabic) {
+        const token = arabic[0];
+        let value = Number(arabic[1]);
+        if (token.includes("万")) value *= 10000;
+        if (token.includes("千")) value *= 1000;
+        return roundMoney(value);
+      }
+
+      const chineseMatch = compact.match(/[零〇一二两三四五六七八九十百千万]+/);
+      if (!chineseMatch) return 0;
+      return roundMoney(chineseToNumber(chineseMatch[0]));
+    }
+
+    function chineseToNumber(input) {
+      const map = { 零: 0, 〇: 0, 一: 1, 二: 2, 两: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9 };
+      let total = 0;
+      let section = 0;
+      let number = 0;
+      const units = { 十: 10, 百: 100, 千: 1000 };
+
+      for (const char of input) {
+        if (char in map) {
+          number = map[char];
+        } else if (char === "万") {
+          section = (section + number) || 1;
+          total += section * 10000;
+          section = 0;
+          number = 0;
+        } else if (char in units) {
+          section += (number || 1) * units[char];
+          number = 0;
+        }
+      }
+
+      return total + section + number;
+    }
+
+    function roundMoney(value) {
+      return Math.round(value * 100) / 100;
+    }
+
+    function balances() {
+      let running = 0;
+      return records.map((record) => {
+        running += record.type === "转入" ? record.amount : -record.amount;
+        return { ...record, balance: roundMoney(running) };
+      });
+    }
+
+    function render() {
+      const rows = balances();
+      const latest = rows.length ? rows[rows.length - 1].balance : 0;
+      $("principal").textContent = formatMoney(latest);
+      $("count").textContent = `${records.length} 笔记录`;
+      $("initialBtn").hidden = records.length > 0;
+      $("undoBtn").disabled = records.length === 0;
+
+      const list = $("records");
+      list.innerHTML = "";
+
+      if (!rows.length) {
+        const empty = document.createElement("div");
+        empty.className = "empty";
+        empty.textContent = "还没有本金流水";
+        list.appendChild(empty);
+        return;
+      }
+
+      rows.slice().reverse().forEach((record) => {
+        const row = document.createElement("div");
+        row.className = "record";
+        row.innerHTML = `
+          <div class="date">${record.date}</div>
+          <div class="type ${record.type === "转入" ? "type-in" : "type-out"}">${record.type}</div>
+          <div class="amount money">${formatMoney(record.amount)}</div>
+          <div class="balance money">${formatMoney(record.balance)}</div>
+          <button class="delete" type="button" aria-label="删除">×</button>
+        `;
+        row.querySelector("button").addEventListener("click", () => deleteRecord(record.id));
+        list.appendChild(row);
+      });
+    }
+
+    function addRecordFromInput() {
+      const input = $("sentence");
+      try {
+        const record = parseEntry(input.value);
+        records.push(record);
+        saveRecords();
+        input.value = "";
+        render();
+        setStatus(`已记录：${record.type} ${formatMoney(record.amount)}，记得备份 JSON`);
+        remindBackup();
+      } catch (error) {
+        setStatus(error.message);
+        input.focus();
+      }
+    }
+
+    function setInitialPrincipal() {
+      const input = $("sentence");
+      try {
+        if (records.length) throw new Error("已有记录，不能重复设置初始本金");
+        const amount = parseAmount(input.value);
+        if (!amount || amount <= 0) throw new Error("请输入初始本金金额");
+        records.push({
+          id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+          date: today(),
+          type: "转入",
+          amount,
+          note: "初始本金"
+        });
+        saveRecords();
+        input.value = "";
+        render();
+        setStatus(`已设置初始本金：${formatMoney(amount)}，记得备份 JSON`);
+        remindBackup();
+      } catch (error) {
+        setStatus(error.message);
+        input.focus();
+      }
+    }
+
+    function deleteRecord(id) {
+      records = records.filter((record) => record.id !== id);
+      saveRecords();
+      render();
+      setStatus("已删除");
+    }
+
+    function undoLastRecord() {
+      if (!records.length) return;
+      const removed = records.pop();
+      saveRecords();
+      render();
+      setStatus(`已撤回上一笔：${removed.type} ${formatMoney(removed.amount)}`);
+    }
+
+    function exportCsv() {
+      const rows = balances();
+      const header = ["日期", "类型", "金额", "本金", "原始输入"];
+      const body = rows.map((record) => [
+        record.date,
+        record.type,
+        record.amount,
+        record.balance,
+        record.note || ""
+      ]);
+      const csv = [header, ...body]
+        .map((row) => row.map(csvCell).join(","))
+        .join("\n");
+      download(`股票本金记录-${today()}.csv`, "\ufeff" + csv, "text/csv;charset=utf-8");
+    }
+
+    function csvCell(value) {
+      return `"${String(value).replace(/"/g, '""')}"`;
+    }
+
+    function backupJson() {
+      download(`股票本金备份-${today()}.json`, JSON.stringify(records, null, 2), "application/json");
+      $("backupBtn").classList.remove("backup-remind");
+      $("backupNotice").hidden = true;
+      setStatus("备份已生成");
+    }
+
+    function download(filename, content, type) {
+      const blob = new Blob([content], { type });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      setStatus("已生成下载文件");
+    }
+
+    function importJson(file) {
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const imported = JSON.parse(reader.result);
+          if (!Array.isArray(imported)) throw new Error();
+          records = imported
+            .filter((item) => item && item.date && item.type && Number(item.amount) > 0)
+            .map((item) => ({
+              id: item.id || Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+              date: item.date,
+              type: item.type === "转出" ? "转出" : "转入",
+              amount: roundMoney(Number(item.amount)),
+              note: item.note || ""
+            }));
+          saveRecords();
+          render();
+          $("backupNotice").hidden = true;
+          $("backupBtn").classList.remove("backup-remind");
+          setStatus("备份已导入");
+        } catch {
+          setStatus("备份文件格式不对");
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function clearAll() {
+      if (!records.length) return;
+      if (!confirm("确定清空所有本金记录吗？")) return;
+      records = [];
+      saveRecords();
+      render();
+      $("backupNotice").hidden = true;
+      $("backupBtn").classList.remove("backup-remind");
+      setStatus("已清空");
+    }
+
+    function setupVoiceInput() {
+      const voiceBtn = $("voiceBtn");
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition || !window.isSecureContext) {
+        voiceBtn.disabled = true;
+        voiceBtn.textContent = "语音不可用";
+        return;
+      }
+
+      const recognition = new SpeechRecognition();
+      let listening = false;
+      recognition.lang = "zh-CN";
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+
+      recognition.onstart = () => {
+        listening = true;
+        voiceBtn.classList.add("listening");
+        voiceBtn.textContent = "正在听...";
+        setStatus("正在听，请说：转入一万");
+      };
+
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        $("sentence").value = transcript;
+        $("sentence").focus();
+        setStatus("已识别，请确认后点记录");
+      };
+
+      recognition.onerror = (event) => {
+        const messages = {
+          "not-allowed": "麦克风权限被拒绝",
+          "no-speech": "没有听清，请再试一次",
+          network: "语音服务网络异常"
+        };
+        setStatus(messages[event.error] || "语音识别失败");
+      };
+
+      recognition.onend = () => {
+        listening = false;
+        voiceBtn.classList.remove("listening");
+        voiceBtn.textContent = "语音输入";
+      };
+
+      voiceBtn.addEventListener("click", () => {
+        if (listening) return;
+        try {
+          recognition.start();
+        } catch {
+          setStatus("语音识别启动失败");
+        }
+      });
+    }
+
+    $("addBtn").addEventListener("click", addRecordFromInput);
+    $("initialBtn").addEventListener("click", setInitialPrincipal);
+    $("sentence").addEventListener("keydown", (event) => {
+      if (event.key === "Enter") addRecordFromInput();
+    });
+    $("exportBtn").addEventListener("click", exportCsv);
+    $("undoBtn").addEventListener("click", undoLastRecord);
+    $("backupBtn").addEventListener("click", backupJson);
+    $("importBtn").addEventListener("click", () => $("fileInput").click());
+    $("fileInput").addEventListener("change", (event) => importJson(event.target.files[0]));
+    $("clearBtn").addEventListener("click", clearAll);
+    document.querySelectorAll("[data-sample]").forEach((button) => {
+      button.addEventListener("click", () => {
+        $("sentence").value = button.dataset.sample;
+        $("sentence").focus();
+      });
+    });
+
+    setupVoiceInput();
+    render();
+  </script>
+</body>
+</html>
